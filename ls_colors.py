@@ -136,10 +136,8 @@ class ls_colors(ColorScheme):
                 if key == 'executable' and (context.directory or context.link):
                     continue
                 t_attributes = t_attributes.split(';')
-                colour256_fg = self.get_256_foreground_color_if_exists(
-                    t_attributes)
-                colour256_bg = self.get_256_background_color_if_exists(
-                    t_attributes)
+                colour256_fg = self.get_256_foreground_color_if_exists(t_attributes)
+                colour256_bg = self.get_256_background_color_if_exists(t_attributes)
                 new_attr = self.get_attr_from_lscolors(t_attributes)
                 if new_attr is not None:
                     attr |= new_attr
@@ -160,7 +158,7 @@ class ls_colors(ColorScheme):
                     elif (colour_val >= 40 and colour_val <= 47):
                         colour16_bg = colour_val
                     # eight more basic colours
-                    elif (colour_val >= 90 and colour_val <= 97):
+                    elif (colour_val >= 100 and colour_val <= 107):
                         colour16_bg = colour_val
 
                 if colour256_fg is not None:
@@ -177,7 +175,11 @@ class ls_colors(ColorScheme):
             return style.default_colors
         elif context.in_browser:
             if context.selected:
-                attr = style.reverse
+                attr = style.reverse | style.bold
+            if context.empty or context.error:
+                bg = style.red
+            if context.border:
+                fg = 237
             if context.tag_marker and not context.selected:
                 attr |= style.bold
                 if fg in (style.red, style.magenta):
@@ -202,5 +204,93 @@ class ls_colors(ColorScheme):
                 if context.marked:
                     attr |= style.bold
                     fg = style.yellow
+            if context.badinfo:
+                if attr & style.reverse:
+                    bg = style.red
+                else:
+                    fg = style.red
+
+        elif context.in_titlebar:
+            attr |= style.bold
+            if context.hostname:
+                fg = style.red if context.bad else style.green
+            elif context.tab:
+                if context.good:
+                    attr |= style.bold
+                    fg = style.red
+
+        elif context.in_statusbar:
+            if context.permissions:
+                if context.good:
+                    fg = style.cyan
+                elif context.bad:
+                    fg = style.red
+            if context.marked:
+                attr |= style.bold | style.reverse
+                fg = style.yellow
+            if context.message:
+                if context.bad:
+                    attr |= style.bold
+                    fg = style.red
+            if context.loaded:
+                bg = self.progress_bar_color
+            if context.vcsinfo:
+                attr &= ~style.bold
+                fg = style.blue
+            if context.vcscommit:
+                attr &= ~style.bold
+                fg = style.yellow
+            if context.vcsdate:
+                attr &= ~style.bold
+                fg = style.cyan
+
+        elif context.in_taskview:
+            if context.title:
+                fg = style.blue
+            if context.selected:
+                attr |= style.reverse
+            if context.loaded:
+                if context.selected:
+                    fg = self.progress_bar_color
+                else:
+                    bg = self.progress_bar_color
+
+        if context.text:
+            if context.highlight:
+                attr |= style.reverse
+
+        if context.empty:
+            attr = style.bold
+            fg = style.red
+            bg = style.black
+
+        if context.vcsfile and not context.selected:
+            attr &= ~style.bold
+            if context.vcsconflict:
+                attr |= style.reverse
+                fg = style.red
+            elif context.vcschanged:
+                fg = style.yellow
+            elif context.vcsunknown:
+                fg = style.red
+            elif context.vcsstaged:
+                fg = style.green
+            elif context.vcssync:
+                fg = style.green
+            elif context.vcsignored:
+                fg = style.default
+
+        elif context.vcsremote and not context.selected:
+            attr &= ~style.bold
+            if context.vcssync or context.vcsnone:
+                fg = style.green
+            elif context.vcsbehind:
+                fg = style.red
+            elif context.vcsahead:
+                fg = style.blue
+            elif context.vcsdiverged:
+                fg = style.magenta
+            elif context.vcsunknown:
+                fg = style.red
 
         return fg, bg, attr
